@@ -1,0 +1,110 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: ${0} listofargfiles programToTest sampleProgram" # User message to inform how to use the bash script
+}
+
+error() {
+    echo "Test failed: ${1}"
+    echo "Args:"
+    cat ${2}
+    echo "Input:"
+    cat ${3}
+    echo "Expected:"
+    cat ${4}
+    echo "Actual:"
+    cat ${5}
+}
+
+if [ $# -ne 3 ]; then # checks if the right arguments are in used
+  usage
+  exit 1
+fi
+
+for a in $(cat ${1}) ; do
+  temp=$(mktemp /tmp/test.XXXXXXXX)
+  temp2=$(mktemp /tmp/test2.XXXXXXXX)
+  filein="${a}.in"
+  file="${a}.args"    # forge the .args file
+  if [ -e ${filein} ]; then
+    if [ -e ${file} ]; then  # Checks if the file exists
+      if [ ! -r ${file} ]; then  # Checks if the file is readable 
+        echo "${file} is not readable"  # Echo not readable
+        exit 1
+      fi
+      ${2} $(cat ${file}) < ${filein} > ${temp}
+      ${3} $(cat ${file}) < ${filein} > ${temp2}
+      if [ ! $temp = $temp2 ]; then 
+        echo "Test failed: ${a}"
+        echo "Args:"
+        cat ${file}
+        echo "Input:"
+        cat ${filein}
+        echo "Expected:"
+        cat ${temp2}
+        echo "Actual:"
+        cat ${temp}
+      fi
+    else
+      ${2} < ${filein} > ${temp}
+      ${3} < ${filein} > ${temp2}
+      if [ ! diff $temp =  $temp2 ]; then
+        echo "Test failed: ${a}"
+        echo "Args:"
+        echo "Input:"
+        cat ${filein}
+        echo "Expected:"
+        cat ${temp2}
+        echo "Actual:"
+        cat ${temp}
+      fi
+    fi
+  elif [ -e ${file} ]; then
+    ${2} $(cat ${file}) > ${temp}
+    ${3} $(cat ${file}) > ${temp2}
+    if [ ! $temp =  $temp2 ]; then
+      echo "Test failed: ${a}"
+      echo "Args:"
+      cat ${file}
+      echo "Input:"
+      echo "Expected:"
+      cat ${temp2}
+      echo "Actual:"
+      cat ${temp}
+    fi
+  else
+    ${2} > ${temp}
+    ${3} > ${temp2}
+    if [ ! $temp = $temp2 ]; then
+      echo "Test failed: ${a}"
+      echo "Args:"
+      echo "Input:"
+      echo "Expected:"
+      cat ${temp2}
+      echo "Actual:"
+      cat ${temp}
+    fi
+  fi
+##  for x in $(${2} $(cat ${file})) ; do # loops through test program and builds the actual output
+#    strf1="${strf1} ${x}"
+#  done
+#
+#  for y in $(${3} $(cat ${file})) ; do # loops through sample program and builds the expected output
+#    strf2="${strf2} ${y}"
+#  done
+#
+#  if [ ! "$strf1" = "$strf2" ]; then    # generates the failed test outline
+#    echo "Test failed: ${a}"
+#    echo "Args:"
+#    cat ${file}
+#    echo "Expected:"
+#    ${3} $(cat ${file})
+#    echo "Actual:"
+#    ${2} $(cat ${file})
+#  fi
+
+ # strf1=""
+ # strf2=""
+  rm $temp
+  rm $temp2
+done
